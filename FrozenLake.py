@@ -84,9 +84,11 @@ class FrozenLake(Environment):
                     current_list = self.probabilities[state_idx][action]
                     # Check if goal or hole
                     field_type = self.lake[row][column]
-                    if field_type == '$' or field_type == '#':
-                        # If goal or hole, make inescapable (probability 1.0)
-                        current_list.append((1.0, state_idx, 0, True))
+                    # If goal or hole, make inescapable (probability 1.0)
+                    if field_type == '$': # goal
+                        current_list.append((1.0, state_idx, 1.0, True))
+                    elif field_type == '#': # hole
+                        current_list.append((1.0, state_idx, 0.0, True))
                     else:
                         # Add probabilities for successful action and slips
                         for b in range(n_actions):
@@ -108,27 +110,21 @@ class FrozenLake(Environment):
 
     def p(self, next_state, state, action):
         # Initialise transition probability
-        tp = 0.0
+        transition_p = 0.0
         # Get possible moves for the state and action (successful move + slips)
         possible_moves = self.probabilities[state][action]
-        for move in possible_moves:
-            if move[1] == next_state:
-                tp += move[0]
+        for proba, next_s, reward, done in possible_moves:
+            if next_state == next_s:
+                transition_p += proba
 
-        return tp
+        return transition_p
 
     def r(self, next_state_idx, state_idx, action):
-        # Convert current state idx to coordinates
-        current_coords = self.state_idx_to_coords[state_idx]
-
-        # Check whether current state is absorbing state
-        if self.abs_states[current_coords] == 1:
-            # If in absorbing state, actions give 1 for goal
-            if self.reward_map[current_coords] == 1:
-                # In goal state :)
-                return 1.0
-
-        return 0.0
+        possible_actions = self.probabilities[state_idx][action]
+        probability = -1
+        for proba, next_state, reward, done in possible_actions:
+            if next_state == next_state_idx:
+                return reward
 
     def render(self, policy=None, value=None):
         if policy is None:
