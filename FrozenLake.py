@@ -54,27 +54,51 @@ class FrozenLake(Environment):
         self.state_idx_to_coords = list(product(range(self.reward_map.shape[0]), range(self.reward_map.shape[1])))
         self.coords_to_state_idx = {s: i for (i, s) in enumerate(self.state_idx_to_coords)}
 
-        # Precompute allowed transitions
-        self.allowed_transitions = np.zeros((self.n_states, self.n_states, self.n_actions))
-        for state_index, state in enumerate(self.state_idx_to_coords):
-            for action_index, action in enumerate(self.actions):
-                # Get next state for action
-                next_state = (state[0] + action[0], state[1] + action[1])
+        # Precompute probabilities for transitions
+        # self.probabilities = np.zeros((self.n_states, self.n_states, self.n_actions))
+        self.probabilities = {state: {action: [] for action in range(n_actions)} for state in range(n_states)}
 
-                # If next_state is not valid, default to current state index
-                next_state_index = self.coords_to_state_idx.get(next_state, state_index)
+        def increment(row, col, action):
+            if action == 0: # up
+                row = max(row - 1, 0)
+            elif action == 1: # left
+                col = max(col - 1, 0)
+            elif action == 2: # down
+                row = min(row + 1, self.lake.shape[0] - 1)
+            elif action == 3:
+                col = min(col + 1, self.lake.shape[1] - 1)
+            return (row, col)
 
-                self.allowed_transitions[next_state_index, state_index, action_index] = 1.0
+        def update_prob_matrix(row, col, action):
+            new_row, new_col = increment(row, col, action)
+            new_state = self.coords_to_state_idx[(new_row, new_col)]
+            f_type = self.lake[row][column]
+            done = f_type == '$' or f_type == '#'
+            reward = float(f_type == '$')
+            return new_state, reward, done
 
+        for row in range(self.lake.shape[0]):
+            for column in range(self.lake.shape[1]):
+                state_idx = self.coords_to_state_idx[(row, column)]
+                for action in range(n_actions):
+                    current_list = self.probabilities[state_idx][action]
+                    # Check if goal or hole
+                    field_type = self.lake[row][column]
+                    if field_type == '$' or field_type == '#':
+                        # If goal or hole, make inescapable (probability 1.0)
+                        current_list.append((1.0, state_idx, 0, True))
+                    else:
+                        # Add probabilities for successful action and slips
+                        for b in range(n_actions):
+                            # The asterisk ('*') unpacks the return value of update_prob_matrix
+                            if b == action:
+                                # Successful action
+                                current_list.append((1.0 - (n_actions - 1.0) * self.slip, *update_prob_matrix(row, column, b)))
+                            else:
+                                # Slip
+                                current_list.append((self.slip, *update_prob_matrix(row, column, b)))
 
     def step(self, action):
-        # Slip: With a chance of "self.slip" (set to 0.1) the agent slips and takes a random direction
-        # Note: random.random() returns a random float between 0.0 and 1.0
-        if random.random() < self.slip:
-            print("Ooops, slipped...")
-            # Assign random action
-            action = np.random.randint(0, 3)
-
         # This call updates self.step as well
         state, reward, done = Environment.step(self, action)
 
@@ -83,20 +107,13 @@ class FrozenLake(Environment):
         return state, reward, done
 
     def p(self, next_state, state, action):
-        # For normal, non-absorbing states:
-        # Check the valid moves in the pre-calculated table
-        tp = self.allowed_transitions[next_state, state, action]
-
-        # For absorbing states:
-        # Convert current state idx to coordinates
-        current_coords = self.state_idx_to_coords[state]
-        # Check whether current state is absorbing state
-        if self.abs_states[current_coords] == 1:
-            # If in absorbing state, only the current (absorbing) state is permitted
-            if next_state == state:
-                tp = 1.0
-            else:
-                tp = 0.0
+        # Initialise transition probability
+        tp = 0.0
+        # Get possible moves for the state and action (successful move + slips)
+        possible_moves = self.probabilities[state][action]
+        for move in possible_moves:
+            if move[1] == next_state:
+                tp += move[0]
 
         return tp
 
