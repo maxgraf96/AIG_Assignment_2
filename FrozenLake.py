@@ -121,7 +121,6 @@ class FrozenLake(Environment):
 
     def r(self, next_state_idx, state_idx, action):
         possible_actions = self.probabilities[state_idx][action]
-        probability = -1
         for proba, next_state, reward, done in possible_actions:
             if next_state == next_state_idx:
                 return reward

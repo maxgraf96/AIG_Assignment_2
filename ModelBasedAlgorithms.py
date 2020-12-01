@@ -80,6 +80,49 @@ def policy_iteration(env, gamma, theta, max_iterations, policy=None):
     return policy, value
 
 
+def bellman(env, value, state, gamma):
+    policy = np.zeros((env.n_states, env.n_actions))
+    e = np.zeros(env.n_actions)
+
+    # Find action giving maximum value
+    for action in range(env.n_actions):
+        q = 0
+        P = np.array(env.probabilities[state][action])
+        if np.size(P) == 0:
+            rows = 0
+        else:
+            rows = np.shape(P)[0]
+
+        for i in range(rows):
+            successor = int(P[i][1])
+            trans_proba = P[i][0]
+            reward = P[i][2]
+            q += trans_proba * (reward + gamma * value[successor])
+        # Assign action value
+        e[action] = q
+    move = np.argmax(e)
+    policy[state][move] = 1
+
+    # Greedy take action and update value
+    u = 0
+    P = np.array(env.probabilities[state][move])
+    if np.size(P) == 0:
+        rows = 0
+    else:
+        rows = np.shape(P)[0]
+
+    for i in range(rows):
+        successor = int(P[i][1])
+        trans_proba = P[i][0]
+        reward = P[i][2]
+
+        u += trans_proba * (reward + gamma * value[successor])
+
+    value[state] = u
+
+    return value[state]
+
+
 def value_iteration(env, gamma, theta, max_iterations, value=None):
     if value is None:
         value = np.zeros(env.n_states)
@@ -87,5 +130,43 @@ def value_iteration(env, gamma, theta, max_iterations, value=None):
         value = np.array(value, dtype=np.float)
 
     # TODO:
+    for iteration in range(max_iterations):
+        delta = 0
+        for state in range(env.n_states):
+            val = value[state]
+            bellman(env, value, state, gamma)
+            delta = max(delta, abs(val - value[state]))
+        if delta < theta:
+            break
+
+    policy = np.zeros(env.n_states, dtype=int)
+    for state in range(env.n_states):
+        policy = best_policy_for_state(env, value, policy, state, gamma)
 
     return policy, value
+
+
+def best_policy_for_state(env, value, policy, state, gamma):
+    e = np.zeros(env.n_actions)
+    # Find action giving maximum value
+    for action in range(env.n_actions):
+        q = 0
+        P = np.array(env.probabilities[state][action])
+        if np.size(P) == 0:
+            rows = 0
+        else:
+            rows = np.shape(P)[0]
+
+        for i in range(rows):
+            successor = int(P[i][1])
+            trans_proba = P[i][0]
+            reward = P[i][2]
+            q += trans_proba * (reward + gamma * value[successor])
+            # Assign action value
+            e[action] = q
+
+    # Get highest scoring move
+    move = np.argmax(e)
+    policy[state] = int(move)
+
+    return policy

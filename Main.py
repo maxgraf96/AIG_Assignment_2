@@ -26,17 +26,17 @@ def main():
 
     print('')
 
-    print('## Policy iteration')
-    policy, value = policy_iteration(env, gamma, theta, max_iterations)
-    env.render(policy, value)
+    # print('## Policy iteration')
+    # policy, value = policy_iteration(env, gamma, theta, max_iterations)
+    # env.render(policy, value)
 
     print('')
 
-    # print('## Value iteration')
-    # policy, value = value_iteration(env, gamma, theta, max_iterations)
-    # env.render(policy, value)
-    #
-    # print('')
+    print('## Value iteration')
+    policy, value = value_iteration(env, gamma, theta, max_iterations)
+    env.render(policy, value)
+
+    print('')
     #
     # print('# Model-free algorithms')
     # max_episodes = 2000
