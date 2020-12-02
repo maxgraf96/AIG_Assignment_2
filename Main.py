@@ -26,9 +26,9 @@ def main():
 
     print('')
 
-    # print('## Policy iteration')
-    # policy, value = policy_iteration(env, gamma, theta, max_iterations)
-    # env.render(policy, value)
+    print('## Policy iteration')
+    policy, value = policy_iteration(env, gamma, theta, max_iterations)
+    env.render(policy, value)
 
     print('')
 

@@ -1,4 +1,3 @@
-import random
 import numpy as np
 from Environment import Environment, play
 from Util import _printoptions
@@ -59,51 +58,88 @@ class FrozenLake(Environment):
         self.probabilities = {state: {action: [] for action in range(n_actions)} for state in range(n_states)}
 
         def increment(row, col, action):
-            if action == 0: # up
+            """
+            Helper function for generating transition probability matrix.
+            Makes sure that our agents don't leave the playing field.
+            :param row: Current row
+            :param col: Current column
+            :param action: Incoming action
+            :return: New row and column coordinates
+            """
+            # Boundary checks to make sure that agents don't leave the field
+            if action == 0:  # up
                 row = max(row - 1, 0)
-            elif action == 1: # left
+            elif action == 1:  # left
                 col = max(col - 1, 0)
-            elif action == 2: # down
+            elif action == 2:  # down
                 row = min(row + 1, self.lake.shape[0] - 1)
             elif action == 3:
                 col = min(col + 1, self.lake.shape[1] - 1)
-            return (row, col)
+            return row, col
 
         def update_prob_matrix(row, col, action):
+            """
+            Helper function for generating transition probability matrix.
+            Takes a current position (row, col) and an action and returns
+            the new state, the reward for the state and whether the agent is done (won or fell in hole)
+            :param row:
+            :param col:
+            :param action:
+            :return:
+            """
+            # Get next field coordinates with boundary checks
             new_row, new_col = increment(row, col, action)
+            # Convert coordinates to state ID
             new_state = self.coords_to_state_idx[(new_row, new_col)]
+            # Get new coordinate type
             f_type = self.lake[row][column]
+            # Check whether we reached the goal or fell in hole
             done = f_type == '$' or f_type == '#'
+            # Reward = 1 if agent is at goal, 0 otherwise
             reward = float(f_type == '$')
             return new_state, reward, done
 
+        # Generate transition probabilities
+        # Adapted from the openai gym implementation
+        # https://gym.openai.com/envs/FrozenLake-v0/
+        # Go through all fields and
         for row in range(self.lake.shape[0]):
             for column in range(self.lake.shape[1]):
+                # Get state index from coordinates
                 state_idx = self.coords_to_state_idx[(row, column)]
+                # Go through all actions (up, left, down, right)
                 for action in range(n_actions):
+                    # Get transition probabilities for current state and action
                     current_list = self.probabilities[state_idx][action]
-                    # Check if goal or hole
+                    # Check if field is goal or hole
                     field_type = self.lake[row][column]
                     # If goal or hole, make inescapable (probability 1.0)
-                    if field_type == '$': # goal
+                    if field_type == '$':  # goal => reward 1, done = True
                         current_list.append((1.0, state_idx, 1.0, True))
-                    elif field_type == '#': # hole
+                    elif field_type == '#':  # hole => reward 0, done = True
                         current_list.append((1.0, state_idx, 0.0, True))
+                    # Otherwise check where we can go from here:
                     else:
                         # Add probabilities for successful action and slips
                         for b in range(n_actions):
-                            # The asterisk ('*') unpacks the return value of update_prob_matrix
                             if b == action:
                                 # Successful action
-                                current_list.append((1.0 - (n_actions - 1.0) * self.slip, *update_prob_matrix(row, column, b)))
+                                # The asterisk ('*') unpacks the return value of the update_prob_matrix() function
+                                # The probability for a successful action is 1 minus the slip probability
+                                # for each remaining move
+                                # Note: For this to work the slip probability has to be in the range [0...1]
+                                current_list.append(
+                                    (1.0 - (n_actions - 1.0) * self.slip, *update_prob_matrix(row, column, b))
+                                )
                             else:
-                                # Slip
+                                # Slip :(
                                 current_list.append((self.slip, *update_prob_matrix(row, column, b)))
 
     def step(self, action):
         # This call updates self.step as well
         state, reward, done = Environment.step(self, action)
 
+        # Check whether agent is done
         done = (state == self.absorbing_state) or done
 
         return state, reward, done
