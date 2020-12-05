@@ -1,3 +1,4 @@
+from time import process_time  # For comparing execution times for policy and value iteration
 from FrozenLake import FrozenLake
 from ModelBasedAlgorithms import policy_iteration, value_iteration
 from TabularModelFree.Sarsa import sarsa
@@ -11,13 +12,23 @@ def main():
     seed = 0
 
     # Small lake
-    lake = [['&', '.', '.', '.'],
-            ['.', '#', '.', '#'],
-            ['.', '.', '.', '#'],
-            ['#', '.', '.', '$']]
+    small_lake = [['&', '.', '.', '.'],
+                  ['.', '#', '.', '#'],
+                  ['.', '.', '.', '#'],
+                  ['#', '.', '.', '$']]
 
+    big_lake = [['&', '.', '.', '.', '.', '.', '.', '.'],
+                ['.', '.', '.', '.', '.', '.', '.', '.'],
+                ['.', '.', '.', '#', '.', '.', '.', '.'],
+                ['.', '.', '.', '.', '.', '#', '.', '.'],
+                ['.', '.', '.', '#', '.', '.', '.', '.'],
+                ['.', '#', '#', '.', '.', '.', '#', '.'],
+                ['.', '#', '.', '.', '#', '.', '#', '.'],
+                ['.', '.', '.', '#', '.', '.', '.', '$']]
+
+    # Use this to switch between small and big lake
+    lake = big_lake
     env = FrozenLake(lake, slip=0.1, max_steps=16, seed=seed)
-
 
     print('# Model-based algorithms')
     gamma = 0.9
@@ -27,14 +38,17 @@ def main():
     print('')
 
     print('## Policy iteration')
-    policy, value = policy_iteration(env, gamma, theta, max_iterations)
+    policy, value, n_iterations = policy_iteration(env, gamma, theta, max_iterations)
     env.render(policy, value)
 
     print('')
 
+    tic = process_time()
     print('## Value iteration')
-    policy, value = value_iteration(env, gamma, theta, max_iterations)
+    policy, value, n_iterations = value_iteration(env, gamma, theta, max_iterations)
     env.render(policy, value)
+    toc = process_time()
+    print("Elapsed time:", round(toc - tic, 4), "seconds")
 
     print('')
     #

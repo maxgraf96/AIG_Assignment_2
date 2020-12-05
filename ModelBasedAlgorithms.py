@@ -17,6 +17,9 @@ def policy_iteration(env, gamma, theta, max_iterations, policy=None):
     else:
         policy = np.array(policy, dtype=int)
 
+    # Store number of iterations until threshold reached for evaluation
+    n_iterations = max_iterations
+
     for iteration in range(max_iterations):
         # Evaluate the current policy
         value = policy_evaluation(env, policy, gamma, theta, max_iterations)
@@ -26,12 +29,14 @@ def policy_iteration(env, gamma, theta, max_iterations, policy=None):
 
         # Break if converged
         if np.array_equal(policy, new_policy):
+            # print("Policy iteration finished after " + str(iteration + 1) + " iterations.")
+            n_iterations = iteration + 1  # +1 since iteration starts at 0
             break
 
         # Update old policy
         policy = new_policy
 
-    return policy, value
+    return policy, value, n_iterations
 
 
 def value_iteration(env, gamma, theta, max_iterations, value=None):
@@ -40,7 +45,9 @@ def value_iteration(env, gamma, theta, max_iterations, value=None):
     else:
         value = np.array(value, dtype=np.float)
 
-    # TODO:
+    # Store number of iterations until threshold reached for evaluation
+    n_iterations = max_iterations
+
     # Find optimal value function
     for iteration in range(max_iterations):
         delta = 0
@@ -53,7 +60,8 @@ def value_iteration(env, gamma, theta, max_iterations, value=None):
             delta = max(delta, abs(old_val - value[state]))
         # Break if we're below the tolerance level
         if delta < theta:
-            print("Value iteration finished after " + str(iteration) + " iterations.")
+            # print("Value iteration finished after " + str(iteration + 1) + " iterations.")
+            n_iterations = iteration + 1  # +1 since iteration starts at 0
             break
 
     # Policy extraction
@@ -65,7 +73,7 @@ def value_iteration(env, gamma, theta, max_iterations, value=None):
         # This call updates the policy state-by-state
         policy = best_policy_for_state(env, value, policy, state, gamma)
 
-    return policy, value
+    return policy, value, n_iterations
 
 
 # ------------------------- Helper functions for policy iteration -------------------------
@@ -100,7 +108,7 @@ def policy_evaluation(env, policy, gamma, theta, max_iterations):
 
         # Break if value difference smaller than threshold
         if delta < theta:
-            print("Policy iteration finished after " + str(i) + " iterations.")
+            # print("Policy evaluation finished after " + str(i + 1) + " iterations.")
             break
 
         # Update policy
