@@ -1,49 +1,59 @@
 import numpy as np
+#from tqdm import trange # Processing Bar
+
 def sarsa(env, max_episodes, eta, gamma, epsilon, seed=None):
     random_state = np.random.RandomState(seed)
 
     eta = np.linspace(eta, 0, max_episodes)
     epsilon = np.linspace(epsilon, 0, max_episodes)
 
-    q = np.zeros((env.n_states, env.n_actions))  # Q table initialisation
+    # initialising the agent’s Q-table to zeros
+    q = np.zeros((env.n_states, env.n_actions))
 
-    def greedy_policy(state):
-        action = 0
-        if np.random.RandomState(0, 1) < epsilon:
-            a = env.n_actions()
+    # epsilon-greedy exploration strategy
+    def epsilon_greedy(q, epsilon, n_actions, s):
+        """
+        Q: Q Table
+        epsilon: exploration parameter
+        n_actions: number of actions
+        s: state
+        """
+        # selects a random action with probability epsilon
+        if np.random.RandomState() <= epsilon:
+            return np.random.randint(n_actions)
         else:
-            a = np.argmax(q[state, :])
-        return a
+            return np.argmax(q[s, :])
 
-    '''def learn(s, next_s, reward, a):
-        predict = q[s, a]
-        target = reward + gamma * np.max(q[next_s, :])
-        q[s, a] = q[s, a] + eta * (target - predict)'''
+    # SARSA Process
+        """
+        eta: learning rate
+        gamma: exploration parameter
+        max_episode: max number of episodes
+        """
 
-    for i in range(max_episodes):
-        step = 0
-        total_rewards = 0
-        done = False  # Done will tell if we have reached the goal or not. It will be True once goal is reached
 
-        s = env.reset()  # Resetting the environment
+        reward_array = np.zeros(max_episodes)
 
-        while step < range:
-            next_s, reward, done, info = env.step(a)  # stepping into the environment
-            next_a = greedy_policy(next_s, q) # env.n_actions?
+        for i in range(max_episodes):
 
-            learn = reward + gamma * q[next_s][next_a] - q[s, a]
-            q[s, a] += eta * learn  # exploration/learn
+            s = env.reset()  # initial state/Resetting the environment
 
-            step += 1
-            total_rewards += 1
-            total_rewards += reward
-            s, a = next_s, next_a  # defining next state as a current state
+            a = epsilon_greedy(Q, epsilon, n_actions, s)  # initial action
+            done = False
+            while not done:
+                s_, reward, done, _ = env.step(a)
+                a_ = epsilon_greedy(q, epsilon, n_actions, s_)
 
-            if done == True:
-                env.render()
-                print("Episode {i} took {t} steps ")
-                break
-
+                # update Q table
+                q[s, a] += eta * (reward + (gamma * q[s_, a_]) - q[s, a])
+                if done:
+                    max_episodes.set_description('Episode {} Reward {}'.format(i + 1, reward))
+                    max_episodes.refresh()
+                    reward_array[i] = reward
+                    break
+                s, a = s_, a_
+        env.close()
+        return q, reward_array
 
     policy = q.argmax(axis=1)
     value = q.max(axis=1)
