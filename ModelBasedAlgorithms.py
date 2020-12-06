@@ -17,7 +17,10 @@ def policy_iteration(env, gamma, theta, max_iterations, policy=None):
     else:
         policy = np.array(policy, dtype=int)
 
-    for i in range(max_iterations):
+    # Store number of iterations until threshold reached for evaluation
+    n_iterations = max_iterations
+
+    for iteration in range(max_iterations):
         # Evaluate the current policy
         value = policy_evaluation(env, policy, gamma, theta, max_iterations)
 
@@ -26,12 +29,14 @@ def policy_iteration(env, gamma, theta, max_iterations, policy=None):
 
         # Break if converged
         if np.array_equal(policy, new_policy):
+            # print("Policy iteration finished after " + str(iteration + 1) + " iterations.")
+            n_iterations = iteration + 1  # +1 since iteration starts at 0
             break
 
         # Update old policy
         policy = new_policy
 
-    return policy, value
+    return policy, value, n_iterations
 
 
 def value_iteration(env, gamma, theta, max_iterations, value=None):
@@ -40,19 +45,26 @@ def value_iteration(env, gamma, theta, max_iterations, value=None):
     else:
         value = np.array(value, dtype=np.float)
 
-    # TODO:
+    # Store number of iterations until threshold reached for evaluation
+    n_iterations = max_iterations
+
+    # Find optimal value function
     for iteration in range(max_iterations):
         delta = 0
         for state in range(env.n_states):
             # Save value before applying Bellman operator
-            val = value[state]
+            old_val = value[state]
             # This call updates the value[state] we just saved
             bellman(env, value, state, gamma)
-            # Break if we're below the tolerance level
-            delta = max(delta, abs(val - value[state]))
+            # Get difference between old and new value
+            delta = max(delta, abs(old_val - value[state]))
+        # Break if we're below the tolerance level
         if delta < theta:
+            # print("Value iteration finished after " + str(iteration + 1) + " iterations.")
+            n_iterations = iteration + 1  # +1 since iteration starts at 0
             break
 
+    # Policy extraction
     # Initialise policy
     policy = np.zeros(env.n_states, dtype=int)
     # And get the best policy (i.e. the best move for each state)
@@ -61,7 +73,7 @@ def value_iteration(env, gamma, theta, max_iterations, value=None):
         # This call updates the policy state-by-state
         policy = best_policy_for_state(env, value, policy, state, gamma)
 
-    return policy, value
+    return policy, value, n_iterations
 
 
 # ------------------------- Helper functions for policy iteration -------------------------
@@ -96,6 +108,7 @@ def policy_evaluation(env, policy, gamma, theta, max_iterations):
 
         # Break if value difference smaller than threshold
         if delta < theta:
+            # print("Policy evaluation finished after " + str(i + 1) + " iterations.")
             break
 
         # Update policy
@@ -166,7 +179,7 @@ def greedy_osla(env, state, value_function, gamma):
 # ------------------------- Helper functions for value iteration -------------------------
 def bellman(env, value, state, gamma):
     """
-    Apply the Bellman operator to the current state
+    Apply the optimality Bellman operator to the current value function with the current state
     Note: This method modifies the "value" vector passed into it
     :param env: The game environment
     :param value: Vector of the action values for each state
