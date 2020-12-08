@@ -1,6 +1,5 @@
 import numpy as np
 
-
 # from tqdm import trange # Processing Bar
 
 # epsilon-greedy exploration strategy
@@ -12,7 +11,7 @@ def epsilon_greedy(q1, epsilon1, n_actions, s):
     s: state
     """
     # selects a random action with probability epsilon
-    if np.random.random() <= epsilon1:
+    if np.random.random() < epsilon1:
         return np.random.randint(n_actions)
     else:
         return np.argmax(q1[s, :])
@@ -45,8 +44,11 @@ def sarsa(env, max_episodes, eta, gamma, epsilon, seed=None):
             a_ = epsilon_greedy(q, epsilon[i], env.n_actions, s_)
 
             # update Q table
-            q[s, a] += eta[i] * (reward + (gamma * q[s_, a_]) - q[s, a])
-            s, a = s_, a_
+            target = reward + gamma * q[s_, a_]
+            q[s, a] = q[s, a] + eta[i] * (target - q[s, a])
+
+            s = s_
+            a = a_
 
     policy = q.argmax(axis=1)
     value = q.max(axis=1)
