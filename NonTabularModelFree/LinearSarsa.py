@@ -23,7 +23,7 @@ def linear_sarsa(env, max_episodes, eta, gamma, epsilon, seed=None):
         q = features.dot(theta)
 
         # TODO:
-        done = False;
+        done = False
         while not done:
             action = epsilon_greedy(q, epsilon[i], env.n_actions)  # Get action for current state
             features_, reward, done = env.step(action)  # Step into next environment
